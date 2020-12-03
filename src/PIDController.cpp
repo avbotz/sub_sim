@@ -8,6 +8,8 @@
 #include "simulator/commandParser.hpp"
 #include "simulator/utils.hpp"
 
+FILE* out;
+
 void PIDController::init()
 {
 	/* Subscribers must be set up outside of the class */
@@ -299,9 +301,9 @@ bool PIDController::alive()
 
 void PIDController::getCommandCallback(const std_msgs::String::ConstPtr &msg)
 {
+	std::cout << "command callback" << std::endl;
 	this->Serial.command = msg->data.c_str();
 	this->Serial.split();
-	FILE* out = fopen(SIM_PORT, "w+");
 
 	// Read Porpoise command
 	if (this->Serial.available() > 0)
@@ -398,6 +400,8 @@ float PID::init(float a, float b, float c)
 	this->kd = c;
 	this->prev = 0.0;
 	this->sum = 0.0;
+
+	out = fopen(SIM_PORT, "w+");
 }
 
 /*
