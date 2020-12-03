@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<model name="bat_bin">
+  <static>true</static>
+  <link name="bat_bin_link">
+
+  <visual name="bat_bin">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://bat_bin/meshes/bat.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </visual>
+
+  <collision name="bat_bin">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://bat_bin/meshes/bat.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </collision>
+
+  </link>
+</model>
+</sdf>

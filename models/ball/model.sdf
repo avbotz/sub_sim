@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<model name="ball">
+  <static>false</static>
+  <link name="ball_link">
+
+  <visual name="ball">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://ball/meshes/ball.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </visual>
+
+  <collision name="ball">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <sphere><radius>0.03</radius></sphere>
+    </geometry>
+  </collision>
+
+  </link>
+</model>
+</sdf>

@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- Center of buoyancy -->
+    <xacro:property name="nemo_cob" value="0 0 0.14"/>
+
+    <!-- Vehicle's actual volume (Gazebo cannot compute the volume out of the mesh) -->
+    <xacro:property name="nemo_volume" value="0.044"/>
+
+    <!-- Describing the dimensions of the vehicle's bounding box -->
+    <xacro:property name="nemo_length" value="0.9"/>
+    <xacro:property name="nemo_width"  value="0.6"/>
+    <xacro:property name="nemo_height" value="0.4"/>
+
+    <xacro:macro name="nemo_hydro_model" params="namespace">
+      <!-- List of hydrodynamic models this robot's links -->
+      <link name="${namespace}/base_link">
+        <!-- This flag will make the link neutrally buoyant -->
+        <neutrally_buoyant>0</neutrally_buoyant>
+
+        <!-- Link's volume -->
+        <volume>${nemo_volume}</volume>
+
+        <!-- Link's bounding box, it is used to recalculate the immersed
+        volume when close to the surface.
+        This is a workaround the invalid bounding box given by Gazebo-->
+        <box>
+          <width>${nemo_width}</width>
+          <length>${nemo_length}</length>
+          <height>${nemo_height}</height>
+        </box>
+
+        <!-- Center of buoyancy -->
+        <center_of_buoyancy>${nemo_cob}</center_of_buoyancy>
+
+        <!-- Fossen's equation of motion -->
+        <hydrodynamic_model>
+          <type>fossen</type>
+          <added_mass>
+            20 0  0  0  0  0
+            0  30 0  0  0  0
+            0  0  90 0  0  0
+            0  0  0  12 0  0
+            0  0  0  0  20 0
+            0  0  0  0  0  5
+          </added_mass>
+          <!--
+            The linear damping coefficients can be provided as a diagonal (6 elements)
+            or a full matrix (36 coefficients), like the added-mass coefficients above
+          -->
+          <linear_damping>
+            -4 -10 -17.4 -6.4211 -8 -8
+          </linear_damping>
+          <!--
+            The quadratic damping coefficients can be provided as a diagonal (6 elements)
+            or a full matrix (36 coefficients), like the added-mass coefficients above
+          -->
+          <quadratic_damping>
+            -10 -23.709 -43.500 -16.053 -18.500 -18.500
+          </quadratic_damping>
+        </hydrodynamic_model>
+
+      </link>
+    </xacro:macro>
+
+</robot>

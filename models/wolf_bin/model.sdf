@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<model name="wolf_bin">
+  <static>true</static>
+  <link name="wolf_bin_link">
+
+  <visual name="wolf_bin">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://wolf_bin/meshes/wolf.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </visual>
+
+  <collision name="wolf_bin">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://wolf_bin/meshes/wolf.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </collision>
+
+  </link>
+</model>
+</sdf>

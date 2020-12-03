@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<model name="tribuoy">
+  <static>true</static>
+  <link name="tribuoy_link">
+
+  <visual name="tribuoy">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://tribuoy/meshes/tribuoy.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </visual>
+
+  <collision name="tribuoy">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://tribuoy/meshes/tribuoy.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </collision>
+
+  </link>
+</model>
+</sdf>

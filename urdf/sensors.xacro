@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Front camera -->
+  <gazebo reference="${namespace}/front_camera_link">
+    <sensor type="camera" name="camera1">
+      <update_rate>15.0</update_rate>
+      <camera name="head">
+        <horizontal_fov>1.34914</horizontal_fov>
+          <image>
+          <width>512</width>
+          <height>341</height>
+          <format>B8G8R8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>front_camera</cameraName>
+        <imageTopicName>image</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <link name="${namespace}/front_camera_link"/>
+  <joint name="${namespace}/front_camera_joint" type="fixed">
+    <origin xyz="0.39 0 -0.05" rpy="0 0 0" />
+    <parent link="${namespace}/base_link" />
+    <child link="${namespace}/front_camera_link" />
+  </joint>
+
+  <!-- Down camera is on left side-->
+  <gazebo reference="${namespace}/down_camera_link">
+    <sensor type="camera" name="camera2">
+      <update_rate>15.0</update_rate>
+      <camera name="head">
+        <horizontal_fov>2.35619</horizontal_fov>
+          <image>
+          <width>512</width>
+          <height>383</height>
+          <format>B8G8R8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>down_camera</cameraName>
+        <imageTopicName>image</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <link name="${namespace}/down_camera_link"/>
+  <joint name="${namespace}/down_camera_joint" type="fixed">
+    <origin xyz="0 0.19 -0.17" rpy="0 1.5707 0" />
+    <parent link="${namespace}/base_link" />
+    <child link="${namespace}/down_camera_link" />
+  </joint>
+
+</robot>

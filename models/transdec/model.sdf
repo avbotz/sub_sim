@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<!-- Don't put name="transdec" because the naming conflict with the world and launch files will cause Gazebo to crash -->
+<model name="competition_pool">
+  <static>true</static>
+  <link name="transdec_link">
+
+  <visual name="transdec">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://transdec/meshes/transdec.dae</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </visual>
+
+  <collision name="transdec">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://transdec/meshes/transdec_collision.stl</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </collision>
+
+  </link>
+</model>
+</sdf>

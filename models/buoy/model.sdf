@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<model name="buoy">
+  <static>true</static>
+  <link name="buoy_link">
+
+  <visual name="buoy">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <mesh><uri>model://buoy/meshes/buoy.obj</uri><scale>1 1 1</scale></mesh>
+    </geometry>
+  </visual>
+
+  <collision name="buoy">
+    <pose>0 0 0 0 0 0</pose>
+    <geometry>
+      <box><size>0.66 0.04 1.28</size></box>
+    </geometry>
+  </collision>
+
+  </link>
+</model>
+</sdf>
