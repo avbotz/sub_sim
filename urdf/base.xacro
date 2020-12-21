@@ -1,25 +1,22 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <!-- Loading some constants -->
   <xacro:include filename="$(find uuv_descriptions)/urdf/common.urdf.xacro"/>
-  <!-- Loading file with sensor macros -->
   <xacro:include filename="$(find uuv_sensor_ros_plugins)/urdf/sensor_snippets.xacro"/>
-  <!-- Loading the UUV simulator ROS plugin macros -->
   <xacro:include filename="$(find uuv_gazebo_ros_plugins)/urdf/snippets.xacro"/>  
-  <!-- Loading vehicle's specific macros -->
   <xacro:include filename="$(find simulator)/urdf/snippets.xacro"/>
 
-  <!--
-    Vehicle's parameters (remember to enter the model parameters below)
+  <!-- 
+       These figures are all taken from the default uuv simulator parameters.
+       Putting Nemo's values in did not work.
   -->
 
+  <!-- Parameters -->
   <xacro:property name="namespace" value="nemo"/>
   <xacro:property name="inertial_reference_frame" value="world"/>
-  <xacro:property name="mass" value="44.5"/>
-  <!-- Center of gravity -->
-  <xacro:property name="cog" value="0 0 0"/>
+  <xacro:property name="mass" value="1862.87"/>
+
   <!-- Fluid density -->
-  <xacro:property name="rho" value="1028"/>
+  <xacro:property name="rho" value="1028.0"/>
 
   <!--
     Visual mesh file for the vehicle, usually in DAE (Collada) format. Be sure to store the
@@ -28,12 +25,6 @@
     Open the meshes for the RexROV vehicle in Blender to see an example on the mesh placement.
   -->
   <xacro:property name="visual_mesh_file" value="file://$(find simulator)/meshes/nemo.dae"/>
-
-  <!-- Collision geometry mesh, usually in STL format (it is recommended to keep
-  this geometry as simple as possible to improve the performance the physics engine
-  regarding the computation of collision forces) -->
-  <!-- Unused, used simple box shape for collision instead -->
-  <!--xacro:property name="collision_mesh_file" value="file://$(find simulator)/meshes/nemo_collision.stl"/-->
 
   <!-- Vehicle macro -->
   <xacro:macro name="nemo_base" params="namespace *gazebo">
@@ -46,8 +37,8 @@
         -->
         <inertial>
           <mass value="${mass}" />
-          <origin xyz="${cog}" rpy="0 0 0"/>
-          <inertia ixx="1.69" ixy="-0.10" ixz="0.0" iyy="3.21" iyz="0.0" izz="2.94"/>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <inertia ixx="525.39" ixy="1.44" ixz="33.41" iyy="794.20" iyz="2.6" izz="691.23"/>
         </inertial>
 
         <visual>
@@ -73,10 +64,8 @@
     <!-- Set up hydrodynamic plugin given as input parameter -->
     <xacro:insert_block name="gazebo"/>
 
-    <!-- Include the thruster modules -->
+    <!-- Include the thruster and sensor modules -->
     <xacro:include filename="$(find simulator)/urdf/actuators.xacro"/>
-
-    <!-- Include the sensor modules -->
     <xacro:include filename="$(find simulator)/urdf/sensors.xacro"/>
 
   </xacro:macro>

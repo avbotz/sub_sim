@@ -17,11 +17,8 @@ struct commandParser
 	commandParser() {}
 
 	std::string command;
-	std::string fname;
 	std::vector<std::string> elements;
-	std::ofstream out;
 
-	void init(std::string);
 	void split();
 	int available();
 	char read();

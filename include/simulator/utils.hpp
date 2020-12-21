@@ -25,7 +25,12 @@ float angle_difference(float, float);
 float angle_add(float, float);
 float limit(float, float, float);
 float limit(float, float);
+bool isValidValue(float);
 void drop(int, int);
+void body_to_inertial(float *, float *, float *);
 EulerAngles ToEulerAngles(Quaternion);
+
+#define D2R 3.1415/180.
+#define R2D 180./3.1415
 
 #endif

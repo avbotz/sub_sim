@@ -8,8 +8,6 @@
 #include "simulator/commandParser.hpp"
 #include "simulator/utils.hpp"
 
-FILE* out;
-
 void PIDController::init()
 {
 	/* Subscribers must be set up outside of the class */
@@ -24,12 +22,14 @@ void PIDController::init()
 	for (int i = 0; i < DOF; i++) this->controllers[i].init(GAINS[i][0], GAINS[i][1], GAINS[i][2]);
 
 	this->controllers[D].init(GAINS[D][0], GAINS[D][1], GAINS[D][2]);
-	this->Serial.init(SIM_PORT);
 	this->p = 0.;
 	this->altitude = 0.;
 	this->desired_altitude = -1.;
 	this->daltitude = 0.;
-	this->mtime = ros::Time::now().toNSec();
+	this->mtime = ros::Time::now().toSec();
+	this->ktime = ros::Time::now().toSec();
+	this->vel_x = 0.;
+	this->vel_y = 0.;
 
 	// State data from gazebo is already updated, set these for the initial values
 	if (USE_INITIAL_HEADING)
@@ -75,8 +75,7 @@ void PIDController::run()
 {
 	// Motors are done starting up and the sub is alive. Run the sub as
 	// intended.
-	this->getState();
-	this->getAltitude();
+	// this->getState();
 	this->current[V] = this->pose[V];
 	this->current[Y] = this->pose[Y] - INITIAL_YAW;
 	// current[P] = ahrs_att((enum att_axis) (PITCH)) - INITIAL_PITCH;
@@ -84,9 +83,7 @@ void PIDController::run()
 	this->current[P] = this->pose[P];
 	this->current[R] = this->pose[R];
 
-	// Distance to bottom already taken care of in getAltitudeCallback()
-	// if (DVL_ON)
-	// 	this->altitude = 4.5 - current[V];
+	// Distance to bottom already taken care of in getDvlMessageCallback()
 
 	// Handle angle overflow/underflow.
 	for (int i = BODY_DOF; i < GYRO_DOF; i++)
@@ -95,15 +92,11 @@ void PIDController::run()
 
 	// Kalman filter removes noise from measurements and estimates the new
 	// state. Assume angle is 100% correct so no need for EKF or UKF.
-	//ktime = kalman.compute(state, covar, temp, ktime);
+	this->kalmanCompute();
 
 	// Use KF for N and E components of state. 
-	// current[F] = state[0];
-	// current[H] = state[3];
-
-	// Don't use dvl or filter for sim
-	this->current[F] = this->pose[F];
-	this->current[H] = this->pose[H];
+	// this->current[F] = state[0];
+	// this->current[H] = state[3];
 
 	// Change heading if desired state is far. Turned off for now
 	// because we want to rely on DVL > AHRS.
@@ -147,8 +140,8 @@ void PIDController::run()
 	// Calculate time difference since last iteration.
 	// uint32_t temp = micros();
 	// float dt = (temp - t)/(float)(1000000);
-	float t = ros::Time::now().toNSec();
-	float dt = (t - this->mtime) / 1000000000.;
+	float t = ros::Time::now().toSec();
+	float dt = t - this->mtime;
 	if (dt == 0.) return;
 
 	// Calculate PID values. Third argument is minimum PID value, which allows
@@ -191,8 +184,28 @@ void PIDController::run()
 			this->thrust[i] += this->p*this->pid[j]*ORIENTATION[i][j];
 	//if (!SIM) power();
 
-	this->mtime = ros::Time::now().toNSec();
+	this->mtime = ros::Time::now().toSec();
 	this->publishThrusterEfforts();
+}
+
+void PIDController::kalmanCompute()
+{
+	/* Get current sub state using DVL velocity data */
+
+	// Calculate time difference since last iteration.
+	float t = ros::Time::now().toSec();
+	float dt = t - this->ktime;
+
+	// Convert relative velocity to absolute state
+	float input[3] = {this->vel_x, this->vel_y, 0.};
+	float angles[3] = {this->current[Y], this->current[P], this->current[R]};
+	float output[3];
+	body_to_inertial(input, angles, output);
+	this->current[F] += output[F] * dt;
+	this->current[H] += output[H] * dt;
+
+	// Update time of last iteration
+	this->ktime = ros::Time::now().toSec();
 }
 
 void PIDController::publishThrusterEfforts()
@@ -207,145 +220,6 @@ void PIDController::publishThrusterEfforts()
 		msg.header.frame_id = std::string("nemo/thruster_") + std::to_string(i);
 		msg.data = this->thrust[i] * this->max_efforts[i];
 		this->thrust_pubs[i].publish(msg);
-	}
-}
-
-void PIDController::getState()
-{
-	// Extract state information from Gazebo (East-North-Up Quaternion)
-	this->gms.waitForExistence();
-	try
-	{
-		this->gms.call(this->model_state);
-	}
-	catch (...)
-	{
-		ROS_INFO("Nemo is not spawned yet.");
-		return;
-	}
-
-	double x = model_state.response.pose.position.x;
-	double y = model_state.response.pose.position.y;
-	double z = model_state.response.pose.position.z;
-	double qx = model_state.response.pose.orientation.x;
-	double qy = model_state.response.pose.orientation.y;
-	double qz = model_state.response.pose.orientation.z;
-	double qw = model_state.response.pose.orientation.w;
-
-	// Convert ENU Quaternion state to NED Euler degree state
-	Quaternion q;
-	q.x = qx;
-	q.y = qy;
-	q.z = qz;
-	q.w = qw;
-
-	EulerAngles angles = ToEulerAngles(q);
-	angles.yaw *= R2D;
-	angles.pitch *= R2D;
-	angles.roll *= R2D;
-
-	this->pose[F] = x;
-	this->pose[H] = -y;
-	this->pose[V] = -z;
-	this->pose[Y] = -angles.yaw;
-	this->pose[P] = -angles.pitch;
-	this->pose[R] = angles.roll;
-}
-
-void PIDController::getAltitude()
-{
-	// Get current altitude, adjust if above the bin
-	/* Note: this is a dirty workaround to avoid using a dvl or ray sensor in sensors.xacro
-	 * to find the distance to the ground. I'm putting this here because using the dvl and ray 
-	 * sensors often caused crashes, so patching this up with flex tape until we can figure
-	 * that problem out
-	 */
-
-	// Find location of bin in Gazebo
-	gazebo_msgs::GetModelState bin_state;
-	bin_state.request.model_name = "bin";
-	this->gms.waitForExistence();
-	try
-	{
-		this->gms.call(bin_state);
-	}
-	catch (...)
-	{
-		return;
-	}
-
-	// Convert East-North-Up coordinates to North-East-Down Coordinates
-	double x = bin_state.response.pose.position.x;
-	double y = -bin_state.response.pose.position.y;
-	double z = -bin_state.response.pose.position.z;
-
-	// Calculate distance of Nemo to bin
-	double xy_dist = std::sqrt( std::pow(this->pose[F] - x, 2) + std::pow(this->pose[H] - y, 2) );
-	double z_dist = z - this->pose[V];
-
-	// If sub is above bin, the altitude is one meter less (floor is 4.5 meters from surface)
-	if (xy_dist < 1. && z_dist < 1.75 && z_dist > 0.)
-		this->altitude = 3.5 - this->pose[V];
-	else
-		this->altitude = 4.5 - this->pose[V];
-}
-
-bool PIDController::alive()
-{
-	/* Checks if simulator has loaded up */
-	if (this->current[V] != 0. && ros::Time::now().toSec() > 15.) 
-		return true;
-	else 
-		return false;
-}
-
-void PIDController::getCommandCallback(const std_msgs::String::ConstPtr &msg)
-{
-	std::cout << "command callback" << std::endl;
-	this->Serial.command = msg->data.c_str();
-	this->Serial.split();
-
-	// Read Porpoise command
-	if (this->Serial.available() > 0)
-	{
-		char c = this->Serial.read();
-
-		if (c == 'a')
-		{
-			fprintf(out, "%d\n", this->alive());
-			fflush(out);
-		}
-		else if (c == 'c')
-		{
-			fprintf(out, "%f %f %f %f %f %f\n",
-				current[F], current[H], current[V],
-				current[Y], current[P], current[R]);
-			fflush(out);
-		}
-		else if (c == 'p')
-		{
-			this->p = this->Serial.parseFloat();
-		}
-		else if (c == 's')
-		{
-			for (int i = 0; i < DOF; i++)
-				this->desired[i] = this->Serial.parseFloat();
-		}
-		else if (c == 'z')
-		{
-			this->desired_altitude = this->Serial.parseFloat();
-		}
-		else if (c == 'w')
-		{
-			fprintf(out, "%f\n", this->altitude);
-			fflush(out);
-		}
-		else if (c == 'g')
-		{
-			int idx = this->Serial.parseInt();
-			int val = this->Serial.parseInt();
-			this->drop(idx, val);
-		}
 	}
 }
 
@@ -393,6 +267,137 @@ void PIDController::drop(int idx, int val)
 	else if (idx == 1) this->alreadyDroppedBall_1 = true;
 }
 
+bool PIDController::alive()
+{
+	/* Checks if simulator has loaded up */
+	if (ros::Time::now().toSec() > 15.) 
+		return true;
+	else 
+		return false;
+}
+
+void PIDController::getCommandCallback(const std_msgs::String::ConstPtr &msg)
+{
+	this->Serial.command = msg->data.c_str();
+	this->Serial.split();
+	FILE* out = fopen(SIM_PORT, "w+");
+
+	// Read Porpoise command
+	if (this->Serial.available() > 0)
+	{
+		char c = this->Serial.read();
+
+		if (c == 'a')
+		{
+			fprintf(out, "%d\n", this->alive());
+			fflush(out);
+		}
+		else if (c == 'c')
+		{
+			fprintf(out, "%f %f %f %f %f %f\n",
+				current[F], current[H], current[V],
+				current[Y], current[P], current[R]);
+			fflush(out);
+		}
+		else if (c == 'p')
+		{
+			this->p = this->Serial.parseFloat();
+		}
+		else if (c == 's')
+		{
+			for (int i = 0; i < DOF; i++)
+				this->desired[i] = this->Serial.parseFloat();
+		}
+		else if (c == 'z')
+		{
+			this->desired_altitude = this->Serial.parseFloat();
+		}
+		else if (c == 'w')
+		{
+			fprintf(out, "%f\n", this->altitude);
+			fflush(out);
+		}
+		else if (c == 'r')
+		{
+			for (int i = 0; i < DOF; i++)
+				desired[i] = current[i];
+			float temp1[3];
+			float temp2[3] = {current[Y], current[P], current[R]};
+			for (int i = 0; i < BODY_DOF; i++)
+				temp1[i] = Serial.parseFloat();
+			float temp[3];
+			body_to_inertial(temp1, temp2, temp);
+			for (int i = 0; i < BODY_DOF; i++)
+				desired[i] += temp[i];
+			for (int i = BODY_DOF; i < GYRO_DOF; i++)
+				desired[i] = angle_add(current[i], Serial.parseFloat());
+		}
+		else if (c == 'g')
+		{
+			int idx = this->Serial.parseInt();
+			int val = this->Serial.parseInt();
+			this->drop(idx, val);
+		}
+	}
+}
+
+void PIDController::getDvlMessageCallback(const uuv_sensor_ros_plugins_msgs::DVL &msg)
+{
+	/*
+	 * Get current altitude and velocity using DVL sensor
+	 */
+
+	// The DVL gets velocity pointed downwards in ENU system, so convert it to reference frame of sub
+	this->altitude = msg.altitude;
+	this->vel_x = msg.velocity.z;
+	this->vel_y = -msg.velocity.y;
+}
+
+void PIDController::getImuMessageCallback(const sensor_msgs::Imu::ConstPtr &msg)
+{
+	/*
+	 * Get current angles using IMU sensor
+	 */
+
+	// Get angles in quaternion format
+	double qx = msg->orientation.x;
+	double qy = msg->orientation.y;
+	double qz = msg->orientation.z;
+	double qw = msg->orientation.w;
+
+	// Convert ENU Quaternions to NED Euler degrees
+	Quaternion q;
+	q.x = qx;
+	q.y = qy;
+	q.z = qz;
+	q.w = qw;
+
+	EulerAngles angles = ToEulerAngles(q);
+	angles.yaw *= R2D;
+	angles.pitch *= R2D;
+	angles.roll *= R2D;
+
+	// Update current angles
+	if (isValidValue(-angles.yaw) &&
+		isValidValue(-angles.pitch) &&
+		isValidValue(angles.roll))
+	{
+		this->pose[Y] = -angles.yaw;
+		this->pose[P] = -angles.pitch;
+		this->pose[R] = angles.roll;
+	}
+}
+
+void PIDController::getPressureMessageCallback(const sensor_msgs::FluidPressure::ConstPtr &msg)
+{
+	/*
+	 * Get current depth using pressure sensor
+	 */
+	float depth = (msg->fluid_pressure - 101.325) / 9.80638;
+	if (isValidValue(depth))
+		this->pose[V] = depth;
+}
+
 float PID::init(float a, float b, float c)
 {
 	this->kp = a;
@@ -400,8 +405,6 @@ float PID::init(float a, float b, float c)
 	this->kd = c;
 	this->prev = 0.0;
 	this->sum = 0.0;
-
-	out = fopen(SIM_PORT, "w+");
 }
 
 /*

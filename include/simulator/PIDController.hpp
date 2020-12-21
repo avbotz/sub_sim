@@ -18,9 +18,10 @@
 #include <ros/publisher.h>
 #include <ros/subscriber.h>
 
-#include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/String.h>
-#include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/FluidPressure.h>
+#include <uuv_sensor_ros_plugins_msgs/DVL.h>
 #include <uuv_gazebo_ros_plugins_msgs/FloatStamped.h>
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/SetModelState.h>
@@ -171,14 +172,13 @@ static const float ORIENTATION[8][7] =
 static const float GAINS[7][3] = 
 {
 	{ 2.00, 0.00, 8.50 },
-	{ 2.00, 0.00, 5.00 },
+	{ 2.00, 0.00, 8.50 },
 	{ 12.0, 0.00, 10.0 },
-	{ 0.10, 0.00, 0.10 },
+	{ 0.10, 0.00, 0.50 },
 	{ 0.10, 0.00, 0.05 },
 	{ 0.10, 0.00, 0.05 },
 	{ 12.0, 0.00, 10.0 },
 };
-
 // Down camera is 19 cm left of center of sub
 static const float DOWN_CAM_OFFSET = -0.19;
 
@@ -238,21 +238,13 @@ class PIDController
 			altitude, desired_altitude, daltitude, 
 			state[N], pose[DOF], current[DOF], desired[DOF], 
 			dstate[DOF], thrust[NUM_MOTORS], pid[DOF], 
-			mtime, p, nemo_index;
-
-		float covar[N*N] = {	
-			1.000, 0.000, 0.000, 0.000, 0.000, 0.000,
-			0.000, 1.000, 0.000, 0.000, 0.000, 0.000,
-			0.000, 0.000, 1.000, 0.000, 0.000, 0.000,
-			0.000, 0.000, 0.000, 1.000, 0.000, 0.000,
-			0.000, 0.000, 0.000, 0.000, 1.000, 0.000,
-			0.000, 0.000, 0.000, 0.000, 0.000, 1.000,
-		};
-		// Some max effort multipliers are negative because uuv propellers spin in opposite direction, so we need to reverse our input 
-		// to get to the same destination.
-		float max_efforts[NUM_MOTORS] = {-300., 300., 300., -300., -300., 300., 300., -300.};
+			mtime, ktime, vel_x, vel_y, p;
 
 		bool alreadyDroppedBall_0, alreadyDroppedBall_1;
+
+		// Some max effort multipliers are negative because uuv propellers spin in opposite direction, so we need to reverse our input 
+		// to get to the same destination.
+		const float max_efforts[NUM_MOTORS] = {-1450., 1450., 1450., -1450., -1450., 1450., 1450., -1450.};
 
 		PID controllers[DOF+1];
 		commandParser Serial;
@@ -266,12 +258,14 @@ class PIDController
 
 		void init();
 		void run();
+		void kalmanCompute();
 		void publishThrusterEfforts();
-		void getState();
-		void getAltitude();
+		void drop(int, int);
 		bool alive();
 		void getCommandCallback(const std_msgs::String::ConstPtr &);
-		void drop(int, int);
+		void getDvlMessageCallback(const uuv_sensor_ros_plugins_msgs::DVL &);
+		void getImuMessageCallback(const sensor_msgs::Imu::ConstPtr &);
+		void getPressureMessageCallback(const sensor_msgs::FluidPressure::ConstPtr &);
 };
 
 #endif

@@ -6,11 +6,6 @@
 
 #include "simulator/commandParser.hpp"
 
-void commandParser::init(std::string filename)
-{
-	this->fname = filename;
-}
-
 void commandParser::split()
 {
 	/* Split string commands by space into a vector */

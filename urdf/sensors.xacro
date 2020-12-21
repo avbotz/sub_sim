@@ -64,9 +64,35 @@
 
   <link name="${namespace}/down_camera_link"/>
   <joint name="${namespace}/down_camera_joint" type="fixed">
-    <origin xyz="0 0.19 -0.17" rpy="0 1.5707 0" />
+    <origin xyz="0 0.19 -0.17" rpy="0 ${0.5*pi} 0" />
     <parent link="${namespace}/base_link" />
     <child link="${namespace}/down_camera_link" />
   </joint>
+
+  <!-- DVL sensor -->
+  <xacro:custom_dvl
+    namespace="${namespace}"
+    suffix=""
+    parent_link="${namespace}/base_link"
+    topic="dvl"
+    noise_sigma="0"
+    noise_amplitude="0"
+    update_rate="10"
+    reference_frame="world">
+    <origin xyz="-0.08 0.0 -0.17" rpy="0 ${0.5*pi} 0" />
+  </xacro:custom_dvl>  
+
+  <!-- IMU  -->
+  <xacro:default_imu_macro
+    namespace="${namespace}"
+    parent_link="${namespace}/base_link"
+    inertial_reference_frame="${inertial_reference_frame}">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:default_imu_macro>
+
+  <!-- Pressure  -->
+  <xacro:default_pressure_macro namespace="${namespace}" parent_link="${namespace}/base_link">
+    <origin xyz="-0.08 0.0 0.2" rpy="0 0 0"/>
+  </xacro:default_pressure_macro>
 
 </robot>

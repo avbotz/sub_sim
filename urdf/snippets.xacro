@@ -1,108 +1,135 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!--                                                                      -->
-  <!-- MACRO FOR THRUSTER UNITS  -->
-  <!--                                                                      -->
+  <!-- Thruster joint and link class --> 
+  <xacro:macro name="thruster_macro"
+    params="robot_namespace thruster_id *origin">
+    <xacro:thruster_module_first_order_basic_fcn_macro
+      namespace="${robot_namespace}"
+      thruster_id="${thruster_id}"
+      mesh_filename="file://$(find simulator)/meshes/propeller.dae"
+      dyn_time_constant="0.01"
+      rotor_constant="0.00031">
+      <xacro:insert_block name="origin"/>
+    </xacro:thruster_module_first_order_basic_fcn_macro>
+  </xacro:macro>
 
-  <!-- Provide the propeller mesh in a separate file with the rotation axis
-  over propeller's frame X-axis in DAE (Collada) or STL format.
-  -->
-  <xacro:property name="prop_mesh_file" value="file://$(find simulator)/meshes/propeller.dae"/>
-
-  <!--
-    Thruster macro with integration of joint and link. The thrusters should
-    be initialized in the actuators.xacro file.
-  -->
-  <xacro:macro name="thruster_macro" params="robot_namespace thruster_id *origin">
-
-    <!--
-    Dummy link as place holder for the thruster frame,
-    since thrusters can often be inside the collision geometry
-    of the vehicle and may cause internal collisions if set otherwise
-    -->
-    <link name="${robot_namespace}/thruster_${thruster_id}">
-
-      <visual>
-        <geometry>
-          <mesh filename="${prop_mesh_file}" scale="1 1 1" />
-        </geometry>
-      </visual>
-
+  <!-- Setup Individual DVL Ray Class -->
+  <xacro:macro name="custom_dvl_ray" params="namespace suffix index pitch yaw update_rate">
+    <link name="${namespace}/dvl${suffix}_sonar${index}_link">
       <inertial>
-        <mass value="0.001" />
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <inertia ixx="0.000000017" ixy="0.0" ixz="0.0"
-               iyy="0.000000017" iyz="0.0"
-               izz="0.000000017" />
+        <mass value="0.001" />  <!-- [kg] -->
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <inertia ixx="0.000000017" ixy="0" ixz="0" iyy="0.000000017" iyz="0" izz="0.000000017" />
       </inertial>
+      <xacro:no_collision/>
     </link>
 
-    <!-- Joint between thruster link and vehicle base link -->
-    <joint name="${robot_namespace}/thruster_${thruster_id}_joint" type="continuous">
-      <xacro:insert_block name="origin" />
-      <axis xyz="1 0 0" />
-      <parent link="${robot_namespace}/base_link" />
-      <child link="${robot_namespace}/thruster_${thruster_id}" />
+    <joint name="${namespace}/dvl${suffix}_sonar${index}_joint" type="revolute">
+      <origin xyz="0 0 0" rpy="0 ${pitch} ${yaw}"/>
+      <parent link="${namespace}/dvl${suffix}_link" />
+      <child link="${namespace}/dvl${suffix}_sonar${index}_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+      <axis xyz="1 0 0"/>
     </joint>
 
-    <gazebo>
-      <!-- Thruster ROS plugin -->
-      <plugin name="${robot_namespace}_${thruster_id}_thruster_model" filename="libuuv_thruster_ros_plugin.so">
-        <!-- Name of the thruster link -->
-        <linkName>${robot_namespace}/thruster_${thruster_id}</linkName>
+    <gazebo reference="${namespace}/dvl${suffix}_sonar${index}_link">
+      <sensor type="ray" name="dvl${suffix}_sonar${index}">
+        <pose>0 0 0 0 0 0</pose>
+        <update_rate>${update_rate}</update_rate>
+        <visualize>false</visualize>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>1</samples>
+              <resolution>1</resolution>
+              <min_angle>0</min_angle>
+              <max_angle>0</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.2</min>
+            <max>81</max>
+            <resolution>0.01</resolution>
+          </range>
+        </ray>
 
-        <!-- Name of the joint between thruster and vehicle base link -->
-        <jointName>${robot_namespace}/thruster_${thruster_id}_joint</jointName>
-
-        <!-- Make the thruster aware of its id -->
-        <thrusterID>${thruster_id}</thrusterID>
-
-        <!--
-        Value from 0 to 1 to set the efficiency of the output thrust force
-        Default value is 1.0
-        -->
-        <thrust_efficiency>1</thrust_efficiency>
-
-        <!--
-        Value from 0 to 1 to set the efficiency of the propeller as a factor
-        to be multiplied to the current value of the state variable at each
-        iteration.
-        Default value is 1.0
-        -->
-        <propeller_efficiency>1</propeller_efficiency>
-
-        <!--
-        Choose one of the propeller dynamics models below for your implementation
-        This will describe the dynamic model for the state variable of your thruster unit,
-        which can be, e.g., the angular velocity of the propeller.
-        -->
-
-        <dynamics>
-          <type>FirstOrder</type>
-          <timeConstant>0.01</timeConstant>
-        </dynamics>
-
-        <!--
-        Choose one of the model for the steady-state curve describing the
-        relationship between the state variable and the output thrust force
-        -->
-
-        <!-- 1) Basic curve
-        Input: x
-        Output: thrust
-        Function: thrust = rotorConstant * x * abs(x)
-        -->
-        <conversion>
-          <type>Basic</type>
-          <rotorConstant>0.00031</rotorConstant>
-        </conversion>
-
-      </plugin>
+        <plugin filename="libgazebo_ros_range.so" name="dvl${suffix}_sonar${index}">
+          <gaussianNoise>0.005</gaussianNoise>
+          <alwaysOn>true</alwaysOn>
+          <updateRate>${update_rate}</updateRate>
+          <topicName>${topic}_sonar${index}</topicName>
+          <frameName>${namespace}/dvl${suffix}_sonar${index}_link</frameName>
+          <fov>0.06</fov>
+          <radiation>ultrasound</radiation>
+        </plugin>
+      </sensor>
     </gazebo>
+  </xacro:macro>
 
-    <gazebo reference="${robot_namespace}/thruster_${thruster_id}">
-      <selfCollide>false</selfCollide>
+  <!-- Setup Custom DVL class -->
+  <xacro:macro name="custom_dvl"
+    params="namespace suffix parent_link topic *origin update_rate
+    reference_frame noise_sigma noise_amplitude">
+    <link name="${namespace}/dvl${suffix}_link">
+      <inertial>
+        <mass value="0.001" />  <!-- [kg] -->
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <inertia ixx="0.000000017" ixy="0" ixz="0" iyy="0.000000017" iyz="0" izz="0.000000017" />
+      </inertial>
+      <xacro:no_collision/>
+    </link>
+
+    <joint name="${namespace}/dvl${suffix}_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/dvl${suffix}_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0" />
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <xacro:custom_dvl_ray
+      namespace="${namespace}" suffix=""
+      index="0" pitch="-0.52" yaw="0.0" update_rate="${update_rate}">
+    </xacro:custom_dvl_ray>
+
+    <xacro:custom_dvl_ray
+      namespace="${namespace}" suffix=""
+      index="1" pitch="0" yaw="0.52" update_rate="${update_rate}">
+    </xacro:custom_dvl_ray>
+
+    <xacro:custom_dvl_ray
+      namespace="${namespace}" suffix=""
+      index="2" pitch="0.52" yaw="0.0" update_rate="${update_rate}">
+    </xacro:custom_dvl_ray>
+
+    <xacro:custom_dvl_ray
+      namespace="${namespace}" suffix=""
+      index="3" pitch="0.0" yaw="-0.52" update_rate="${update_rate}">
+    </xacro:custom_dvl_ray>
+
+    <gazebo>
+      <plugin filename="libuuv_gazebo_ros_dvl_plugin.so" name="libuuv_gazebo_dvl${suffix}_plugin">
+        <robot_namespace>${namespace}</robot_namespace> <!-- (string, required): ros namespace in which the messages are published -->
+        <link_name>${namespace}/dvl${suffix}_link</link_name> <!-- (string, required): name of the body which holds the IMU sensor -->
+        <sensor_topic>${topic}</sensor_topic> <!-- (string): name of the sensor output topic and prefix of service names -->
+        <update_rate>${update_rate}</update_rate> <!-- Update period [s] -->
+        <noise_sigma>${noise_sigma}</noise_sigma> <!-- std dev of position estimates in x, y, z [m/s] -->
+        <noise_amplitude>${noise_amplitude}</noise_amplitude>
+        <enable_gazebo_messages>false</enable_gazebo_messages>
+        <enable_local_ned_frame>false</enable_local_ned_frame>
+        <static_reference_frame>${reference_frame}</static_reference_frame>
+        <!-- Declaring the beams -->
+        <beam_link_name_0>${namespace}/dvl_sonar0_link</beam_link_name_0>
+        <beam_link_name_1>${namespace}/dvl_sonar1_link</beam_link_name_1>
+        <beam_link_name_2>${namespace}/dvl_sonar2_link</beam_link_name_2>
+        <beam_link_name_3>${namespace}/dvl_sonar3_link</beam_link_name_3>
+        <!-- Declaring the beam output topics -->
+        <beam_topic_0>${topic}_sonar0</beam_topic_0>
+        <beam_topic_1>${topic}_sonar1</beam_topic_1>
+        <beam_topic_2>${topic}_sonar2</beam_topic_2>
+        <beam_topic_3>${topic}_sonar3</beam_topic_3>
+      </plugin>
     </gazebo>
   </xacro:macro>
 
