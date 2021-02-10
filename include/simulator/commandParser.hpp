@@ -16,9 +16,11 @@ struct commandParser
 {
 	commandParser() {}
 
+	FILE* in;
 	std::string command;
 	std::vector<std::string> elements;
 
+	void init(const char *);
 	void split();
 	int available();
 	char read();

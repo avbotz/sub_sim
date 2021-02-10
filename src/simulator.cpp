@@ -3,20 +3,18 @@
  *
  *  @author Craig Wang
  */
+#include <ros/package.h>
 #include "simulator/PIDController.hpp"
 
 int main(int argc, char** argv)
 {
+	// Initialize node and thruster controller.
 	ros::init(argc, argv, "simulator_node");
 	ros::NodeHandle node;
-	ros::Rate loop_rate(10);
-
+	ros::Rate loop_rate(100);
 	PIDController controller;
-	controller.init();
 
-	// Set up subscribers to receive commands from Porpoise and read simulated sensors
-	ros::Subscriber command_subscriber = 
-		node.subscribe("/nemo/commands", 1, &PIDController::getCommandCallback, &controller);
+	// Set up subscribers to read simulated sensors.
 	ros::Subscriber dvl_subscriber = 
 		node.subscribe("/nemo/dvl", 1, &PIDController::getDvlMessageCallback, &controller);
 	ros::Subscriber imu_subscriber = 
@@ -24,6 +22,7 @@ int main(int argc, char** argv)
 	ros::Subscriber pressure_subscriber = 
 		node.subscribe("/nemo/pressure", 1, &PIDController::getPressureMessageCallback, &controller);
 
+	// Control the simulated sub's thrusters.
 	while (ros::ok())
 	{
 		ros::spinOnce();

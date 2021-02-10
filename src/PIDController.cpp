@@ -8,7 +8,7 @@
 #include "simulator/commandParser.hpp"
 #include "simulator/utils.hpp"
 
-void PIDController::init()
+PIDController::PIDController()
 {
 	/* Subscribers must be set up outside of the class */
 	
@@ -30,6 +30,10 @@ void PIDController::init()
 	this->ktime = ros::Time::now().toSec();
 	this->vel_x = 0.;
 	this->vel_y = 0.;
+
+	// Initialize mock serial port to communicate with Porpoise
+	this->Serial.init(BB_TO_SIM);
+	this->out = fopen(SIM_TO_BB, "w+");
 
 	// State data from gazebo is already updated, set these for the initial values
 	if (USE_INITIAL_HEADING)
@@ -75,7 +79,7 @@ void PIDController::run()
 {
 	// Motors are done starting up and the sub is alive. Run the sub as
 	// intended.
-	// this->getState();
+	this->getPorpoiseCommand();
 	this->current[V] = this->pose[V];
 	this->current[Y] = this->pose[Y] - INITIAL_YAW;
 	// current[P] = ahrs_att((enum att_axis) (PITCH)) - INITIAL_PITCH;
@@ -188,6 +192,84 @@ void PIDController::run()
 	this->publishThrusterEfforts();
 }
 
+void PIDController::getPorpoiseCommand()
+{
+	/* Read Porpoise command */
+	if (this->Serial.available() > 0)
+	{
+		char c = this->Serial.read();
+
+		if (c == 'a')
+		{
+			fprintf(this->out, "%d\n", this->alive());
+			fflush(this->out);
+		}
+		else if (c == 'c')
+		{
+			fprintf(this->out, "%f %f %f %f %f %f\n",
+				this->current[F], this->current[H], this->current[V],
+				this->current[Y], this->current[P], this->current[R]);
+			fflush(this->out);
+		}
+		else if (c == 'p')
+		{
+			this->p = this->Serial.parseFloat();
+		}
+		else if (c == 's')
+		{
+			for (int i = 0; i < DOF; i++)
+				this->desired[i] = this->Serial.parseFloat();
+		}
+		else if (c == 'z')
+		{
+			this->desired_altitude = this->Serial.parseFloat();
+		}
+		else if (c == 'w')
+		{
+			fprintf(this->out, "%f\n", this->altitude);
+			fflush(this->out);
+		}
+		else if (c == 'r')
+		{
+			for (int i = 0; i < DOF; i++)
+				this->desired[i] = this->current[i];
+			float temp1[3];
+			float temp2[3] = {this->current[Y], this->current[P], this->current[R]};
+			for (int i = 0; i < BODY_DOF; i++)
+				temp1[i] = this->Serial.parseFloat();
+			float temp[3];
+			body_to_inertial(temp1, temp2, temp);
+			for (int i = 0; i < BODY_DOF; i++)
+				this->desired[i] += temp[i];
+			for (int i = BODY_DOF; i < GYRO_DOF; i++)
+				this->desired[i] = angle_add(this->current[i], this->Serial.parseFloat());
+		}
+		else if (c == 'g')
+		{
+			int idx = this->Serial.parseInt();
+			int val = this->Serial.parseInt();
+			this->drop(idx, val);
+		}
+		else if (c == 'u')
+		{
+			int dof = this->Serial.parseInt();
+			float gains[3];
+			for (int i = 0; i < 3; i++)
+				gains[i] = this->Serial.parseFloat();
+			this->controllers[dof].init(gains[0], gains[1], gains[2]);
+		}
+	}
+}
+
+bool PIDController::alive()
+{
+	/* Checks if simulator has loaded up */
+	if (ros::Time::now().toSec() > 15.) 
+		return true;
+	else 
+		return false;
+}
+
 void PIDController::kalmanCompute()
 {
 	/* Get current sub state using DVL velocity data */
@@ -231,7 +313,8 @@ void PIDController::drop(int idx, int val)
 	if ((idx == 0 && this->alreadyDroppedBall_0) || (idx == 1 && this->alreadyDroppedBall_1) || (val == 0)) 
 		return;
 
-	// Set up ros services to use
+	// Set up ros services to use, use Gazebo's state because it is more accurate than the DVL
+	// And, the DVL is not located at the center of the sub, so more changes would be needed if we used this->current.
 	ros::NodeHandle node;
 	ros::ServiceClient gms = node.serviceClient<gazebo_msgs::GetModelState>("gazebo/get_model_state");
 	ros::ServiceClient sms = node.serviceClient<gazebo_msgs::SetModelState>("gazebo/set_model_state");
@@ -245,13 +328,20 @@ void PIDController::drop(int idx, int val)
 	getModelState.request.model_name = "nemo";
 	gms.call(getModelState);
 
-	double x = getModelState.response.pose.position.x + BALL_OFFSET[idx];
-	double y = getModelState.response.pose.position.y - DOWN_CAM_OFFSET - DROPPER_OFFSET;
-	double z = getModelState.response.pose.position.z - 0.2;
+	// Convert relative to absolute coordinates to teleport ball to
+	float input[3] = {DROPPER_X_OFFSET + BALL_OFFSET[idx], 
+		DOWN_CAM_OFFSET + DROPPER_Y_OFFSET, 0.2};
+	float angles[3] = {this->current[Y], this->current[P], this->current[R]};
+	float output[3];
+	body_to_inertial(input, angles, output);
+
+	// Convert North-East-Down state to East-North-Up state that Gazebo uses
+	double x = getModelState.response.pose.position.x + output[F];
+	double y = getModelState.response.pose.position.y - output[H];
+	double z = getModelState.response.pose.position.z - output[V];
 
 	// Teleport ball to sub where it then drops
-	std::string ball_name = "ball_" + std::to_string(idx);
-	ball.model_name = ball_name;
+	ball.model_name = "ball_" + std::to_string(idx);
 	ball.pose.position.x = x;
 	ball.pose.position.y = y;
 	ball.pose.position.z = z;
@@ -265,80 +355,6 @@ void PIDController::drop(int idx, int val)
 
 	if (idx == 0) this->alreadyDroppedBall_0 = true;
 	else if (idx == 1) this->alreadyDroppedBall_1 = true;
-}
-
-bool PIDController::alive()
-{
-	/* Checks if simulator has loaded up */
-	if (ros::Time::now().toSec() > 15.) 
-		return true;
-	else 
-		return false;
-}
-
-void PIDController::getCommandCallback(const std_msgs::String::ConstPtr &msg)
-{
-	this->Serial.command = msg->data.c_str();
-	this->Serial.split();
-	FILE* out = fopen(SIM_PORT, "w+");
-
-	// Read Porpoise command
-	if (this->Serial.available() > 0)
-	{
-		char c = this->Serial.read();
-
-		if (c == 'a')
-		{
-			fprintf(out, "%d\n", this->alive());
-			fflush(out);
-		}
-		else if (c == 'c')
-		{
-			fprintf(out, "%f %f %f %f %f %f\n",
-				current[F], current[H], current[V],
-				current[Y], current[P], current[R]);
-			fflush(out);
-		}
-		else if (c == 'p')
-		{
-			this->p = this->Serial.parseFloat();
-		}
-		else if (c == 's')
-		{
-			for (int i = 0; i < DOF; i++)
-				this->desired[i] = this->Serial.parseFloat();
-		}
-		else if (c == 'z')
-		{
-			this->desired_altitude = this->Serial.parseFloat();
-		}
-		else if (c == 'w')
-		{
-			fprintf(out, "%f\n", this->altitude);
-			fflush(out);
-		}
-		else if (c == 'r')
-		{
-			for (int i = 0; i < DOF; i++)
-				desired[i] = current[i];
-			float temp1[3];
-			float temp2[3] = {current[Y], current[P], current[R]};
-			for (int i = 0; i < BODY_DOF; i++)
-				temp1[i] = Serial.parseFloat();
-			float temp[3];
-			body_to_inertial(temp1, temp2, temp);
-			for (int i = 0; i < BODY_DOF; i++)
-				desired[i] += temp[i];
-			for (int i = BODY_DOF; i < GYRO_DOF; i++)
-				desired[i] = angle_add(current[i], Serial.parseFloat());
-		}
-		else if (c == 'g')
-		{
-			int idx = this->Serial.parseInt();
-			int val = this->Serial.parseInt();
-			this->drop(idx, val);
-		}
-	}
 }
 
 void PIDController::getDvlMessageCallback(const uuv_sensor_ros_plugins_msgs::DVL &msg)
