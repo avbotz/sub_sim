@@ -9,7 +9,6 @@
 #define SIMULATOR_PIDCONTROLLER_HPP 
 
 #include <iostream>
-#include <fstream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -18,7 +17,6 @@
 #include <ros/publisher.h>
 #include <ros/subscriber.h>
 
-#include <std_msgs/String.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/FluidPressure.h>
 #include <uuv_sensor_ros_plugins_msgs/DVL.h>
@@ -29,7 +27,8 @@
 
 #include "simulator/commandParser.hpp"
 
-#define SIM_PORT "/tmp/sim_port.txt"
+#define BB_TO_SIM "/tmp/bb_to_sim.txt"
+#define SIM_TO_BB "/tmp/sim_to_bb.txt"
 
 /*! @name Runtime configuration.
  */
@@ -174,16 +173,19 @@ static const float GAINS[7][3] =
 	{ 2.00, 0.00, 8.50 },
 	{ 2.00, 0.00, 8.50 },
 	{ 12.0, 0.00, 10.0 },
-	{ 0.10, 0.00, 0.50 },
+	{ 1.00, 0.00, 1.00 },
 	{ 0.10, 0.00, 0.05 },
 	{ 0.10, 0.00, 0.05 },
-	{ 12.0, 0.00, 10.0 },
+	{ 1.00, 0.00, 8.50 }
 };
 // Down camera is 19 cm left of center of sub
 static const float DOWN_CAM_OFFSET = -0.19;
 
-// Dropper center is 7.5 cm to the left of down cam center
-static const float DROPPER_OFFSET = -0.075;
+// Dropper center is 0 cm in front of the down camera's center
+const float DROPPER_X_OFFSET = 0.;
+
+// Dropper center is 7.5 cm to the left of the down camera's center
+const float DROPPER_Y_OFFSET = -0.075;
 
 // 2 balls; one is 3 cm in front of midline, other is 3 cm behind midline
 static const float BALL_OFFSET[2] = { 0.03, -0.03 };
@@ -244,10 +246,11 @@ class PIDController
 
 		// Some max effort multipliers are negative because uuv propellers spin in opposite direction, so we need to reverse our input 
 		// to get to the same destination.
-		const float max_efforts[NUM_MOTORS] = {-1450., 1450., 1450., -1450., -1450., 1450., 1450., -1450.};
+		const float max_efforts[NUM_MOTORS] = {-2000., 2000., 2000., -2000., -2000., 2000., 2000., -2000.};
 
 		PID controllers[DOF+1];
 		commandParser Serial;
+		FILE* out;
 
 		ros::NodeHandle node;
 		ros::Subscriber state_subscriber, setpoint_subscriber;
@@ -256,13 +259,13 @@ class PIDController
 
 		gazebo_msgs::GetModelState model_state;
 
-		void init();
+		PIDController();
 		void run();
+		void getPorpoiseCommand();
+		bool alive();
 		void kalmanCompute();
 		void publishThrusterEfforts();
 		void drop(int, int);
-		bool alive();
-		void getCommandCallback(const std_msgs::String::ConstPtr &);
 		void getDvlMessageCallback(const uuv_sensor_ros_plugins_msgs::DVL &);
 		void getImuMessageCallback(const sensor_msgs::Imu::ConstPtr &);
 		void getPressureMessageCallback(const sensor_msgs::FluidPressure::ConstPtr &);

@@ -6,6 +6,11 @@
 
 #include "simulator/commandParser.hpp"
 
+void commandParser::init(const char* filename)
+{
+	this->in = fopen(filename, "r+");
+}
+
 void commandParser::split()
 {
 	/* Split string commands by space into a vector */
@@ -57,5 +62,14 @@ float commandParser::parseFloat()
 
 int commandParser::available()
 {
+	/* Reads command from file, returns number of nonspace characters in the command */
+	char line[200];
+	if (fgets(line, 200, this->in) != NULL)
+	{
+		std::string str(line);
+		this->command = str;
+	}
+	else this->command = "";
+	this->split();
 	return this->elements.size();
 }
