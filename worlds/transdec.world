@@ -46,22 +46,22 @@
     
     <include>
       <uri>model://gate</uri>
-      <pose>9.34529643375 -3.44694154542 -2.60189737437 -0.0186603345967 0 1.20533554199</pose>
+      <pose>9.93865664336 -3.46283385362 -2.26363230204 0.0122828131602 0 1.25203522194</pose>
     </include>
 
     <include>
       <uri>model://buoy</uri>
-      <pose>16.9325197691 -3.83130604089 -3.04009119016 0 0 1.32092506734</pose>
+      <pose>18.2787776083 -4.13865329239 -2.89150984313 0 0 1.29431818118</pose>
     </include>
     
     <include>
       <uri>model://tribuoy</uri>
-      <pose>16.3068043918 -6.67325376707 -3.26061426275 0 0 2.84780715318</pose>
+      <pose>16.4388316457 -6.53258705436 -3.17586599813 0 0 0.803919524633</pose>
     </include>
 
     <include>
       <uri>model://wolf_bin</uri>
-      <pose>26.9749662119 -8.02479947237 -4 0 0 -1.41551526876</pose>
+      <pose>26.540108868 -8.6079433702 -4 0 0 -3.91100094357</pose>
       <name>bin</name>
     </include>
     
@@ -88,10 +88,10 @@
         <topic>current_velocity</topic>
         <velocity>
           <mean>0</mean>
-          <min>0</min>
-          <max>5</max>
+          <min>-0.4</min>
+          <max>0.4</max>
           <mu>0.0</mu>
-          <noiseAmp>0.0</noiseAmp>
+          <noiseAmp>1.0</noiseAmp>
         </velocity>
 
         <horizontal_angle>
@@ -99,7 +99,7 @@
           <min>-3.141592653589793238</min>
           <max>3.141592653589793238</max>
           <mu>0.0</mu>
-          <noiseAmp>0.0</noiseAmp>
+          <noiseAmp>0.1</noiseAmp>
         </horizontal_angle>
 
         <vertical_angle>
@@ -114,7 +114,7 @@
 
     <plugin filename="libuuv_sc_ros_interface_plugin.so" name="sc_interface" />
 
-    <gui fullscreen="1" />
+    <gui fullscreen="0" />
 
   </world>
 </sdf>
