@@ -178,16 +178,20 @@ static const float GAINS[7][3] =
 	{ 0.10, 0.00, 0.05 },
 	{ 1.00, 0.00, 8.50 }
 };
-// Down camera is 19 cm left of center of sub
-static const float DOWN_CAM_OFFSET = -0.19;
 
-// Dropper center is 0 cm in front of the down camera's center
-const float DROPPER_X_OFFSET = 0.;
+// Down camera is 0.018 m behind center of sub
+static const float DOWN_CAM_X_OFFSET = -0.018;
 
-// Dropper center is 7.5 cm to the left of the down camera's center
-const float DROPPER_Y_OFFSET = -0.075;
+// Down camera is 0.218 m left of center of sub
+static const float DOWN_CAM_Y_OFFSET = -0.218;
 
-// 2 balls; one is 3 cm in front of midline, other is 3 cm behind midline
+// Ball dropper center is 0.089 m in front of the down camera's center
+static const float DROPPER_X_OFFSET = 0.089;
+
+// Dropper center is 0.002 m to the right of the down camera's center
+static const float DROPPER_Y_OFFSET = 0.002;
+
+// 2 balls; one is 3 cm right of midline, other is 3 cm left of midline
 static const float BALL_OFFSET[2] = { 0.03, -0.03 };
 
 /*! @name Conversions.
