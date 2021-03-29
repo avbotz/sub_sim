@@ -46,22 +46,22 @@
     
     <include>
       <uri>model://gate</uri>
-      <pose>10.6926456998 -3.53413358468 -2.51960161818 0.0195557225213 0 1.28530996185</pose>
+      <pose>9.0419529613 -3.65966845019 -2.47681039181 0.00578262936726 0 1.23724091618</pose>
     </include>
 
     <include>
       <uri>model://buoy</uri>
-      <pose>16.5016358667 -3.8778215922 -2.88771992512 0 0 1.34451376639</pose>
+      <pose>17.8964524444 -4.14662278203 -3.10828327063 0 0 1.23957871083</pose>
     </include>
     
     <include>
       <uri>model://tribuoy</uri>
-      <pose>17.5615061459 -6.29030666795 -3.13299761596 0 0 5.0188564704</pose>
+      <pose>17.9507925829 -6.48186938148 -3.3411338794 0 0 0.938935434577</pose>
     </include>
 
     <include>
-      <uri>model://bat_bin</uri>
-      <pose>26.8757693582 -9.16852645439 -4 0 0 -4.34848142948</pose>
+      <uri>model://wolf_bin</uri>
+      <pose>27.394579181 -8.34887057144 -4 0 0 -1.84884510821</pose>
       <name>bin</name>
     </include>
     
@@ -88,10 +88,10 @@
         <topic>current_velocity</topic>
         <velocity>
           <mean>0</mean>
-          <min>-0.4</min>
-          <max>0.4</max>
+          <min>-0.3</min>
+          <max>0.3</max>
           <mu>0.0</mu>
-          <noiseAmp>1.0</noiseAmp>
+          <noiseAmp>0.1</noiseAmp>
         </velocity>
 
         <horizontal_angle>

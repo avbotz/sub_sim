@@ -30,7 +30,7 @@
 
   <link name="${namespace}/front_camera_link"/>
   <joint name="${namespace}/front_camera_joint" type="fixed">
-    <origin xyz="0.46 0 -0.27" rpy="0 0 0" />
+    <origin xyz="0.46 0 0" rpy="0 0 0" />
     <parent link="${namespace}/base_link" />
     <child link="${namespace}/front_camera_link" />
   </joint>
@@ -62,9 +62,11 @@
     </sensor>
   </gazebo>
 
+  <!-- The down camera location is put lower than usual because otherewise the landing gear
+       takes up a large part of the down camera image -->
   <link name="${namespace}/down_camera_link"/>
   <joint name="${namespace}/down_camera_joint" type="fixed">
-    <origin xyz="-0.018 0.218 -0.37" rpy="0 ${0.5*pi} 0" />
+    <origin xyz="-0.018 0.218 -0.155" rpy="0 ${0.5*pi} 0" />
     <parent link="${namespace}/base_link" />
     <child link="${namespace}/down_camera_link" />
   </joint>
@@ -79,7 +81,7 @@
     noise_amplitude="0"
     update_rate="10"
     reference_frame="world">
-    <origin xyz="-0.003 0.0 -0.39" rpy="0 ${0.5*pi} 0" />
+    <origin xyz="-0.003 0.0 -0.1" rpy="0 ${0.5*pi} 0" />
   </xacro:custom_dvl>  
 
   <!-- IMU  -->
