@@ -264,7 +264,7 @@ void PIDController::getPorpoiseCommand()
 bool PIDController::alive()
 {
 	/* Checks if simulator has loaded up */
-	if (ros::Time::now().toSec() > 15.) 
+	if (ros::Time::now().toSec() > 15.)
 		return true;
 	else 
 		return false;

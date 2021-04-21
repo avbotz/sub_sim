@@ -26,7 +26,10 @@ install(DIRECTORY launch worlds models
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
         PATTERN "*~" EXCLUDE)
 
-catkin_install_python(PROGRAMS scripts/randomize_props.py scripts/create_sim_ports.sh
+catkin_install_python(PROGRAMS 
+	scripts/randomize_props.py 
+	scripts/create_sim_ports.sh 
+	scripts/hydrophone_node.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

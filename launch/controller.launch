@@ -1,7 +1,9 @@
 <launch>
-	<!-- Randomize prop locations, set up files for communication between BB and sim -->
+	<!-- Randomize prop locations, set up files for communication between BB and sim,
+	     setup hydrophones -->
 	<node name="randomize_props_node" pkg="simulator" type="randomize_props.py" output="screen" args="$(find simulator)/worlds/transdec.world"/>
 	<node name="create_sim_ports_node" pkg="simulator" type="create_sim_ports.sh" output="screen"/>
+	<node name="hydrophone_node" pkg="simulator" type="hydrophone_node.py" output="screen"/>
 
 	<!-- Load simulator -->
 	<include file="$(find simulator)/launch/transdec.launch"/>
