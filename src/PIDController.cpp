@@ -118,11 +118,11 @@ void PIDController::run()
 	float d1 = this->desired[H] - this->current[H];
 	float i0 = d0*cos(D2R*this->current[Y]) + d1*sin(D2R*this->current[Y]);
 	float i1 = d1*cos(D2R*this->current[Y]) - d0*sin(D2R*this->current[Y]);
-	if (fabs(angle_difference(desired[Y], current[Y])) > 5.)
-	{
-		this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
-	}
-	else if (fabs(i1) > 2.)
+	// if (fabs(angle_difference(desired[Y], current[Y])) > 5.)
+	// {
+	// 	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
+	// }
+	if (fabs(i1) > 2.)
 	{
 		this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
 		this->dstate[F] = i0 < i1/3. ? i0 : i1/3.;
