@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 	// Initialize node and thruster controller.
 	ros::init(argc, argv, "simulator_node");
 	ros::NodeHandle node;
-	ros::Rate loop_rate(100);
+	ros::Rate loop_rate(10);
 	PIDController controller;
 
 	// Set up subscribers to read simulated sensors.
