@@ -1,5 +1,7 @@
 /** @file nautical_controller.cpp
  *  @brief PID controller class for UUV Simulator, emulating Nautical's controller.
+ *  Basically just copied and pasted Nautical's main.cpp code, which controls the thrusters
+ *  to move the sub to the desired coordinate position.
  *
  *  @author David Zhang
  *  @author Craig Wang
