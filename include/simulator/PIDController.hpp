@@ -176,7 +176,7 @@ static const float GAINS[7][3] =
 	{ 1.00, 0.00, 1.00 },
 	{ 1.00, 0.00, 1.00 },
 	{ 0.10, 0.00, 0.05 },
-	{ 0.75, 0.00, 2.50 }
+	{ 1.50, 0.00, 2.50 }
 };
 
 // Down camera is 0.018 m behind center of sub
