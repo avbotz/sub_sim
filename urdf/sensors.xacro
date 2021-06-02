@@ -62,11 +62,11 @@
     </sensor>
   </gazebo>
 
-  <!-- The down camera location is put lower than usual because otherewise the landing gear
-       takes up a large part of the down camera image -->
+  <!-- The down camera location is on the balls because the 3D model
+    is different from the real life Nemo for now -->
   <link name="${namespace}/down_camera_link"/>
   <joint name="${namespace}/down_camera_joint" type="fixed">
-    <origin xyz="-0.018 0.218 -0.155" rpy="0 ${0.5*pi} 0" />
+    <origin xyz="0.072 0.218 -0.125" rpy="0 ${0.5*pi} 0" />
     <parent link="${namespace}/base_link" />
     <child link="${namespace}/down_camera_link" />
   </joint>

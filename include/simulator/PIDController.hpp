@@ -179,14 +179,14 @@ static const float GAINS[7][3] =
 	{ 1.50, 0.00, 2.50 }
 };
 
-// Down camera is 0.018 m behind center of sub
-static const float DOWN_CAM_X_OFFSET = -0.018;
+// Down camera is 0.072 m in front of center of sub
+static const float DOWN_CAM_X_OFFSET = 0.072;
 
 // Down camera is 0.218 m left of center of sub
 static const float DOWN_CAM_Y_OFFSET = -0.218;
 
-// Ball dropper center is 0.089 m in front of the down camera's center
-static const float DROPPER_X_OFFSET = 0.089;
+// Ball dropper center is 0.089 m behind the down camera's center
+static const float DROPPER_X_OFFSET = -0.089;
 
 // Dropper center is 0.002 m to the right of the down camera's center
 static const float DROPPER_Y_OFFSET = 0.002;

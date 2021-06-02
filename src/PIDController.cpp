@@ -332,7 +332,7 @@ void PIDController::drop(int idx, int val)
 
 	// Convert relative to absolute coordinates to teleport ball to
 	float input[3] = {DOWN_CAM_X_OFFSET + DROPPER_X_OFFSET, 
-		DOWN_CAM_Y_OFFSET + DROPPER_Y_OFFSET + BALL_OFFSET[idx], 0.4};
+		DOWN_CAM_Y_OFFSET + DROPPER_Y_OFFSET + BALL_OFFSET[idx], 0.2};
 	float angles[3] = {this->current[Y], this->current[P], this->current[R]};
 	float output[3];
 	body_to_inertial(input, angles, output);
