@@ -124,18 +124,15 @@ void PIDController::run()
 	// {
 	// 	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
 	// }
-	if (fabs(i1) > 2.)
-	{
-		this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
-		this->dstate[F] = i0 < i1/3. ? i0 : i1/3.;
-		this->dstate[H] = i1; 
-	}
-	else 
-	{
-		this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
-		this->dstate[F] = i0;
-		this->dstate[H] = i1;
-	}
+	// if (fabs(i1) > 2.)
+	// {
+	// 	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
+	// 	this->dstate[F] = i0 < i1/3. ? i0 : i1/3.;
+	// 	this->dstate[H] = i1; 
+	// }
+	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
+	this->dstate[F] = i0;
+	this->dstate[H] = i1;
 
 	this->dstate[V] = this->desired[V] - this->current[V];
 	this->daltitude = this->desired_altitude > 0. ? this->desired_altitude - this->altitude : -9999.;
