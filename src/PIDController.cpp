@@ -94,6 +94,7 @@ void PIDController::run()
 	// Handle angle overflow/underflow.
 	for (int i = BODY_DOF; i < GYRO_DOF; i++)
 		this->current[i] += (this->current[i] > 180.) ? -360. : (this->current[i] < -180.) ? 360. : 0.;
+
 	// float temp[3] = { current[Y], current[P], current[R] };
 
 	// Kalman filter removes noise from measurements and estimates the new
@@ -120,19 +121,18 @@ void PIDController::run()
 	float d1 = this->desired[H] - this->current[H];
 	float i0 = d0*cos(D2R*this->current[Y]) + d1*sin(D2R*this->current[Y]);
 	float i1 = d1*cos(D2R*this->current[Y]) - d0*sin(D2R*this->current[Y]);
-	// if (fabs(angle_difference(desired[Y], current[Y])) > 5.)
-	// {
-	// 	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
-	// }
-	// if (fabs(i1) > 2.)
-	// {
-	// 	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
-	// 	this->dstate[F] = i0 < i1/3. ? i0 : i1/3.;
-	// 	this->dstate[H] = i1; 
-	// }
-	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
+
+	this->desired[P] = 0.;
+	this->desired[R] = 0.;
+
 	this->dstate[F] = i0;
 	this->dstate[H] = i1;
+	this->dstate[Y] = angle_difference(this->desired[Y], this->current[Y]);
+	// Only hold pitch if not doing big turn (so sub doesn't get pushed down)
+	if (fabs(this->dstate[Y]) < 5.)
+		this->dstate[P] = angle_difference(this->desired[P], this->current[P]);
+	this->dstate[R] = angle_difference(this->desired[R], this->current[R]);
+
 
 	this->dstate[V] = this->desired[V] - this->current[V];
 	this->daltitude = this->desired_altitude > 0. ? this->desired_altitude - this->altitude : -9999.;
