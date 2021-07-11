@@ -5,6 +5,7 @@
  *
  *  @author David Zhang
  *  @author Craig Wang
+ *  @author Angad Bhargav
  */
 #include "simulator/PIDController.hpp"
 #include "simulator/commandParser.hpp"
@@ -37,14 +38,6 @@ PIDController::PIDController()
 	this->Serial.init(BB_TO_SIM);
 	this->out = fopen(SIM_TO_BB, "w+");
 
-	// State data from gazebo is already updated, set these for the initial values
-	if (USE_INITIAL_HEADING)
-		this->INITIAL_YAW = this->pose[Y];
-	else
-		INITIAL_YAW = FAR ? 225. : 340.;
-	this->INITIAL_PITCH = this->pose[P];
-	this->INITIAL_ROLL = this->pose[R];
-
 	// Set up gazebo pose listener
 	this->gms = this->node.serviceClient<gazebo_msgs::GetModelState>("gazebo/get_model_state");
 	this->model_state.request.model_name = "nemo";
@@ -52,6 +45,9 @@ PIDController::PIDController()
 	// Initialize ball dropping status
 	this->alreadyDroppedBall_0 = false;
 	this->alreadyDroppedBall_1 = false;
+
+	// Initialize status of starting orientation
+	this->initial_yaw_set = false;
 
 	// Set up thruster effort publishers
 	ros::Publisher thr0_pub = 
@@ -243,6 +239,19 @@ void PIDController::getPorpoiseCommand()
 			for (int i = BODY_DOF; i < GYRO_DOF; i++)
 				this->desired[i] = angle_add(this->current[i], this->Serial.parseFloat());
 		}
+		else if (c == 'x')
+		{
+			this->state[0] = 0.;
+			this->state[3] = 0.;
+			this->desired[F] = 0.;
+			this->desired[H] = 0.;
+			this->desired[V] = 0.;
+			this->desired[Y] = 0.;
+			this->current[F] = 0.;
+			this->current[H] = 0.;
+			this->current[Y] = 0.;
+			this->INITIAL_YAW = this->pose[Y];
+		}
 		else if (c == 'g')
 		{
 			int idx = this->Serial.parseInt();
@@ -400,6 +409,19 @@ void PIDController::getImuMessageCallback(const sensor_msgs::Imu::ConstPtr &msg)
 		this->pose[Y] = -angles.yaw;
 		this->pose[P] = -angles.pitch;
 		this->pose[R] = angles.roll;
+	}
+
+	// Set initial heading if not already done so
+	if (!this->initial_yaw_set)
+	{
+		if (USE_INITIAL_HEADING)
+			this->INITIAL_YAW = this->pose[Y];
+		else
+			INITIAL_YAW = FAR ? 225. : 340.;
+		this->INITIAL_PITCH = this->pose[P];
+		this->INITIAL_ROLL = this->pose[R];
+
+		this->initial_yaw_set = true;
 	}
 }
 

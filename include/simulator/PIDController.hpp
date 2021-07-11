@@ -246,7 +246,7 @@ class PIDController
 			dstate[DOF], thrust[NUM_MOTORS], pid[DOF], 
 			mtime, ktime, vel_x, vel_y, p;
 
-		bool alreadyDroppedBall_0, alreadyDroppedBall_1;
+		bool alreadyDroppedBall_0, alreadyDroppedBall_1, initial_yaw_set;
 
 		// Some max effort multipliers are negative because uuv propellers spin in opposite direction, so we need to reverse our input 
 		// to get to the same destination.
